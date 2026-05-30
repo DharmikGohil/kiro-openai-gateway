@@ -31,3 +31,13 @@ requests/
 .pytest_cache/
 .coverage
 htmlcov/
+
+.venv/
+.env
+*.log
+
+credentials.json
+kiro-auth-token.json
+state.json
+
+__pycache__/
