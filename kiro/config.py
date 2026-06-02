@@ -153,6 +153,18 @@ _raw_creds_file = _get_raw_env_value("KIRO_CREDS_FILE") or os.getenv("KIRO_CREDS
 # Normalize path for cross-platform compatibility
 KIRO_CREDS_FILE: str = str(Path(_raw_creds_file)) if _raw_creds_file else ""
 
+# Inline JSON credentials (for cloud deployments like Render, Railway, Fly.io)
+# Set this to the full JSON content of your credentials file.
+# The gateway will write it to a temp file and use it as KIRO_CREDS_FILE.
+# Useful when you can't mount files but can set environment variables.
+#
+# Example value (single Kiro IDE account with Enterprise auth):
+#   KIRO_CREDS_JSON='{"refreshToken":"...","accessToken":"...","clientId":"...","clientSecret":"..."}'
+#
+# Example value (multiple accounts as JSON array - same format as credentials.json):
+#   KIRO_CREDS_JSON='[{"type":"refresh_token","refresh_token":"...","profile_arn":"..."}]'
+KIRO_CREDS_JSON: str = os.getenv("KIRO_CREDS_JSON", "")
+
 # Path to kiro-cli SQLite database (optional, for AWS SSO OIDC authentication)
 # Default location: ~/.local/share/kiro-cli/data.sqlite3 (Linux/macOS)
 # or ~/.local/share/amazon-q/data.sqlite3 (amazon-q-developer-cli)

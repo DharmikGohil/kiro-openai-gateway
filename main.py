@@ -62,6 +62,7 @@ from kiro.config import (
     PROFILE_ARN,
     REGION,
     KIRO_CREDS_FILE,
+    KIRO_CREDS_JSON,
     KIRO_CLI_DB_FILE,
     PROXY_API_KEY,
     LOG_LEVEL,
@@ -359,10 +360,49 @@ async def lifespan(app: FastAPI):
     # Legacy Fallback: .env → credentials.json
     # ==============================================================================
     creds_path = Path(ACCOUNTS_CONFIG_FILE)
-    
+
+    # ==============================================================================
+    # KIRO_CREDS_JSON: Write inline JSON credentials to a temp file
+    # Useful for cloud deployments (Render, Railway, Fly.io) where file mounts
+    # are not available but environment variables can be set.
+    # ==============================================================================
+    _creds_json_tmp_path: Optional[str] = None
+    _effective_creds_file = KIRO_CREDS_FILE
+
+    if KIRO_CREDS_JSON and not _effective_creds_file:
+        import tempfile
+        try:
+            parsed = json.loads(KIRO_CREDS_JSON)
+
+            # If it's a JSON array, it's a credentials.json-style multi-account config.
+            # Write it directly as credentials.json so AccountManager picks it up.
+            if isinstance(parsed, list):
+                logger.info("KIRO_CREDS_JSON contains a credentials array — writing directly to credentials.json")
+                with open(creds_path, 'w', encoding='utf-8') as f:
+                    json.dump(parsed, f, indent=2, ensure_ascii=False)
+                logger.info("credentials.json written from KIRO_CREDS_JSON (array format)")
+            else:
+                # Single credentials object — write to a temp file and use as KIRO_CREDS_FILE
+                tmp_file = tempfile.NamedTemporaryFile(
+                    mode='w',
+                    suffix='.json',
+                    prefix='kiro-creds-',
+                    delete=False,
+                    encoding='utf-8'
+                )
+                json.dump(parsed, tmp_file, indent=2, ensure_ascii=False)
+                tmp_file.close()
+                _creds_json_tmp_path = tmp_file.name
+                _effective_creds_file = tmp_file.name
+                logger.info(f"KIRO_CREDS_JSON written to temp file: {tmp_file.name}")
+        except json.JSONDecodeError as e:
+            logger.error(f"KIRO_CREDS_JSON is not valid JSON: {e}")
+            logger.error("Fix the KIRO_CREDS_JSON environment variable and redeploy.")
+            raise RuntimeError(f"Invalid KIRO_CREDS_JSON: {e}")
+
     # Check if we have legacy .env credentials
     has_refresh_token = bool(REFRESH_TOKEN)
-    has_creds_file = bool(KIRO_CREDS_FILE) and Path(KIRO_CREDS_FILE).expanduser().exists()
+    has_creds_file = bool(_effective_creds_file) and Path(_effective_creds_file).expanduser().exists()
     has_cli_db = bool(KIRO_CLI_DB_FILE) and Path(KIRO_CLI_DB_FILE).expanduser().exists()
     
     # Helper function to add optional per-account overrides from .env
@@ -398,7 +438,7 @@ async def lifespan(app: FastAPI):
                 elif has_creds_file:
                     entry = {
                         "type": "json",
-                        "path": KIRO_CREDS_FILE
+                        "path": _effective_creds_file
                     }
                     _add_env_overrides(entry)
                     credentials.append(entry)
@@ -432,7 +472,7 @@ async def lifespan(app: FastAPI):
             elif has_creds_file:
                 entry = {
                     "type": "json",
-                    "path": KIRO_CREDS_FILE
+                    "path": _effective_creds_file
                 }
                 _add_env_overrides(entry)
                 credentials.append(entry)
@@ -531,6 +571,15 @@ async def lifespan(app: FastAPI):
         logger.info("Shared HTTP client closed")
     except Exception as e:
         logger.warning(f"Error closing shared HTTP client: {e}")
+
+    # Clean up temp credentials file written from KIRO_CREDS_JSON
+    if _creds_json_tmp_path:
+        try:
+            import os as _os
+            _os.unlink(_creds_json_tmp_path)
+            logger.debug(f"Removed temp credentials file: {_creds_json_tmp_path}")
+        except Exception as e:
+            logger.warning(f"Failed to remove temp credentials file: {e}")
 
 
 # --- FastAPI Application ---
