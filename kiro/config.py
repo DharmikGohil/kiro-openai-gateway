@@ -128,7 +128,9 @@ VPN_PROXY_URL: str = os.getenv("VPN_PROXY_URL", "")
 REFRESH_TOKEN: str = os.getenv("REFRESH_TOKEN", "")
 
 # Profile ARN for AWS CodeWhisperer
-PROFILE_ARN: str = os.getenv("PROFILE_ARN", "")
+_PROFILE_ARN_RAW: str = os.getenv("PROFILE_ARN", "")
+# Guard against placeholder values that users forget to change
+PROFILE_ARN: str = "" if _PROFILE_ARN_RAW.startswith("your-") or _PROFILE_ARN_RAW == "arn:aws:codewhisperer:us-east-1:..." else _PROFILE_ARN_RAW
 
 # AWS SSO/auth region (default us-east-1)
 # This region is used for OIDC token refresh endpoint: https://oidc.{region}.amazonaws.com/token
