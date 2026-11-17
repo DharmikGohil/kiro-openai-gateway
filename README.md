@@ -523,6 +523,8 @@ Leave `VPN_PROXY_URL` empty (default) if you don't need proxy support.
 
 ## 📡 API Reference
 
+> 📘 Full API reference with request fields, real responses, errors and client code: [docs/API.md](docs/API.md)
+
 ### Endpoints
 
 | Endpoint | Method | Description |
