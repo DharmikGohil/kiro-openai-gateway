@@ -287,15 +287,33 @@ HIDDEN_FROM_LIST: List[str] = ["auto"]
 # - Some models may not be available on your Kiro plan (e.g., Opus on free tier)
 # - New models released after this version won't appear here
 # - Update gateway regularly to get the latest model list
+#
+# Source: `kiro-cli chat --list-models` and https://kiro.dev/docs/models/ (November 2026).
+# claude-sonnet-4 was removed: it reached end of life on October 14, 2026.
+# Requests for unlisted models (e.g., kimi-k3, claude-fable-5.1) still pass through to Kiro.
 FALLBACK_MODELS: List[Dict[str, str]] = [
     {"modelId": "auto"},
-    {"modelId": "claude-sonnet-4"},
-    {"modelId": "claude-sonnet-4.5"},
-    {"modelId": "claude-sonnet-4.6"},
-    {"modelId": "claude-haiku-4.5"},
-    {"modelId": "claude-opus-4.5"},
-    {"modelId": "claude-opus-4.6"},
+    # Claude 5.x
+    {"modelId": "claude-opus-5.5"},
+    {"modelId": "claude-sonnet-5.5"},
+    {"modelId": "claude-haiku-5.5"},
+    {"modelId": "claude-opus-5"},
+    {"modelId": "claude-sonnet-5"},
+    # Claude 4.x
+    {"modelId": "claude-opus-4.8"},
     {"modelId": "claude-opus-4.7"},
+    {"modelId": "claude-opus-4.6"},
+    {"modelId": "claude-opus-4.5"},
+    {"modelId": "claude-sonnet-4.6"},
+    {"modelId": "claude-sonnet-4.5"},
+    {"modelId": "claude-haiku-4.5"},
+    # OpenAI GPT-5.6
+    {"modelId": "gpt-5.6-sol"},
+    {"modelId": "gpt-5.6-terra"},
+    {"modelId": "gpt-5.6-luna"},
+    # xAI (experimental)
+    {"modelId": "grok-4.7"},
+    # Open weight models
     {"modelId": "deepseek-3.2"},
     {"modelId": "glm-5"},
     {"modelId": "minimax-m2.1"},

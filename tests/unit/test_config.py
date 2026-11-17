@@ -606,8 +606,114 @@ class TestFallbackModelsConfig:
                     pass
 
 
+    def test_fallback_models_contain_latest_kiro_models(self):
+        """
+        What it does: Verifies that the latest Kiro models are in the fallback list.
+        Purpose: Ensure Claude 5.x, GPT-5.6 and Grok models stay usable during DNS failures.
+        """
+        from kiro.config import FALLBACK_MODELS
+
+        model_ids = {m["modelId"] for m in FALLBACK_MODELS}
+        expected = {
+            "claude-opus-5.5", "claude-sonnet-5.5", "claude-haiku-5.5",
+            "claude-opus-5", "claude-sonnet-5", "claude-opus-4.8",
+            "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "grok-4.7",
+        }
+        missing = expected - model_ids
+        assert not missing, f"Missing latest models in fallback list: {missing}"
+
+    def test_fallback_models_exclude_eol_models(self):
+        """
+        What it does: Verifies that end-of-life models are not in the fallback list.
+        Purpose: Avoid advertising models Kiro no longer serves (claude-sonnet-4 EOL 2026-10-14).
+        """
+        from kiro.config import FALLBACK_MODELS
+
+        model_ids = [m["modelId"] for m in FALLBACK_MODELS]
+        assert "claude-sonnet-4" not in model_ids
+
+    def test_fallback_models_have_no_duplicates(self):
+        """
+        What it does: Verifies that every fallback model ID is unique.
+        Purpose: Prevent duplicate entries in /v1/models.
+        """
+        from kiro.config import FALLBACK_MODELS
+
+        model_ids = [m["modelId"] for m in FALLBACK_MODELS]
+        assert len(model_ids) == len(set(model_ids))
+
+    def test_fallback_models_ids_are_lowercase_without_whitespace(self):
+        """
+        What it does: Verifies that model IDs are lowercase and contain no whitespace.
+        Purpose: Kiro model IDs are lowercase slugs; typos here would break matching.
+        """
+        from kiro.config import FALLBACK_MODELS
+
+        for model in FALLBACK_MODELS:
+            model_id = model["modelId"]
+            assert model_id == model_id.lower(), f"{model_id} is not lowercase"
+            assert model_id == model_id.strip() and " " not in model_id, f"{model_id} has whitespace"
+
+
 class TestFallbackModelsIntegration:
     """Integration tests for FALLBACK_MODELS with ModelResolver."""
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("input_name,expected", [
+        ("claude-opus-5-5", "claude-opus-5.5"),
+        ("claude-opus-5.5", "claude-opus-5.5"),
+        ("claude-sonnet-5-5-20261002", "claude-sonnet-5.5"),
+        ("claude-haiku-5-5-latest", "claude-haiku-5.5"),
+        ("claude-opus-5", "claude-opus-5"),
+        ("claude-opus-5-20260724", "claude-opus-5"),
+        ("claude-sonnet-5", "claude-sonnet-5"),
+        ("claude-opus-4-8", "claude-opus-4.8"),
+        ("claude-5.5-opus-high", "claude-opus-5.5"),
+        ("claude-opus-5.5[1m]", "claude-opus-5.5"),
+        ("gpt-5.6-sol", "gpt-5.6-sol"),
+        ("gpt-5.6-terra", "gpt-5.6-terra"),
+        ("gpt-5.6-luna", "gpt-5.6-luna"),
+        ("grok-4.7", "grok-4.7"),
+    ])
+    async def test_latest_models_resolve_from_fallback_cache(self, input_name, expected):
+        """
+        What it does: Verifies that client-style names of the latest models resolve via fallback cache.
+        Purpose: Ensure normalization (dashes, dates, inverted names, [1m] suffix) works for new models.
+        """
+        from kiro.config import FALLBACK_MODELS
+        from kiro.cache import ModelInfoCache
+        from kiro.model_resolver import ModelResolver
+
+        cache = ModelInfoCache()
+        await cache.update(FALLBACK_MODELS)
+        resolver = ModelResolver(cache=cache, hidden_models={})
+
+        resolution = resolver.resolve(input_name)
+
+        assert resolution.normalized == expected
+        assert resolution.internal_id == expected
+        assert resolution.source == "cache"
+        assert resolution.is_verified is True
+
+    @pytest.mark.asyncio
+    async def test_unlisted_model_still_passes_through(self):
+        """
+        What it does: Verifies that a model absent from fallback list is passed through, not rejected.
+        Purpose: Models like kimi-k3 (region/plan specific) must still reach Kiro.
+        """
+        from kiro.config import FALLBACK_MODELS
+        from kiro.cache import ModelInfoCache
+        from kiro.model_resolver import ModelResolver
+
+        cache = ModelInfoCache()
+        await cache.update(FALLBACK_MODELS)
+        resolver = ModelResolver(cache=cache, hidden_models={})
+
+        resolution = resolver.resolve("kimi-k3")
+
+        assert resolution.internal_id == "kimi-k3"
+        assert resolution.source == "passthrough"
+        assert resolution.is_verified is False
     
     @pytest.mark.asyncio
     async def test_fallback_models_work_with_model_resolver(self):
