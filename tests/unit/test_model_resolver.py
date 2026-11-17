@@ -630,6 +630,78 @@ class TestGetModelIdForKiro:
         assert result == "claude-unknown-model"
 
 
+    def test_resolves_default_auto_kiro_alias(self):
+        """
+        What it does: Resolves the default "auto-kiro" alias to "auto" using config MODEL_ALIASES.
+        Goal: Regression test - alias was advertised in /v1/models but sent raw to Kiro (HTTP 400).
+        """
+        assert get_model_id_for_kiro("auto-kiro", {}) == "auto"
+
+    def test_resolves_custom_alias_then_normalizes(self):
+        """
+        What it does: Resolves alias first, then normalizes the target name.
+        Goal: Check operation order (alias -> normalize -> hidden lookup).
+        """
+        aliases = {"my-opus": "claude-opus-5-5"}
+        assert get_model_id_for_kiro("my-opus", {}, aliases) == "claude-opus-5.5"
+
+    def test_resolves_alias_then_hidden_model(self):
+        """
+        What it does: Alias pointing at a hidden model returns its internal ID.
+        Goal: Check full chain alias -> normalize -> hidden.
+        """
+        aliases = {"old-sonnet": "claude-3-7-sonnet"}
+        hidden = {"claude-3.7-sonnet": "CLAUDE_3_7_SONNET_20250219_V1_0"}
+        assert get_model_id_for_kiro("old-sonnet", hidden, aliases) == "CLAUDE_3_7_SONNET_20250219_V1_0"
+
+    def test_empty_aliases_disable_default_alias(self):
+        """
+        What it does: Passing an explicit empty dict disables alias resolution.
+        Goal: Ensure None (use config) and {} (no aliases) behave differently.
+        """
+        assert get_model_id_for_kiro("auto-kiro", {}, {}) == "auto-kiro"
+
+    def test_alias_lookup_is_exact_match(self):
+        """
+        What it does: Alias lookup is case-sensitive and exact, matching ModelResolver.resolve().
+        Goal: Prevent partial or case-insensitive alias matches.
+        """
+        aliases = {"auto-kiro": "auto"}
+        assert get_model_id_for_kiro("AUTO-KIRO", {}, aliases) == "AUTO-KIRO"
+        assert get_model_id_for_kiro("auto-kiro-x", {}, aliases) == "auto-kiro-x"
+
+    def test_non_alias_model_unaffected(self):
+        """
+        What it does: Regular model names are not changed by alias resolution.
+        Goal: Ensure aliases don't interfere with normal normalization.
+        """
+        assert get_model_id_for_kiro("claude-sonnet-5-5", {}, {"auto-kiro": "auto"}) == "claude-sonnet-5.5"
+
+    def test_openai_and_anthropic_converters_send_resolved_alias(self):
+        """
+        What it does: Both API converters put the resolved alias into the Kiro payload.
+        Goal: Feature consistency across OpenAI and Anthropic paths.
+        """
+        from kiro.converters_openai import build_kiro_payload
+        from kiro.converters_anthropic import anthropic_to_kiro
+        from kiro.models_openai import ChatCompletionRequest, ChatMessage
+        from kiro.models_anthropic import AnthropicMessagesRequest, AnthropicMessage
+
+        openai_req = ChatCompletionRequest(
+            model="auto-kiro", messages=[ChatMessage(role="user", content="hi")]
+        )
+        payload = str(build_kiro_payload(openai_req, "conv-1", ""))
+        assert "auto-kiro" not in payload
+        assert "'modelId': 'auto'" in payload
+
+        anthropic_req = AnthropicMessagesRequest(
+            model="auto-kiro", max_tokens=10, messages=[AnthropicMessage(role="user", content="hi")]
+        )
+        payload = str(anthropic_to_kiro(anthropic_req, "conv-2", ""))
+        assert "auto-kiro" not in payload
+        assert "'modelId': 'auto'" in payload
+
+
 # =============================================================================
 # TestModelResolver - Tests for ModelResolver class
 # =============================================================================
