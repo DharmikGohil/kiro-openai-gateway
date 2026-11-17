@@ -15,35 +15,50 @@ Made with ❤️ by [@Jwadow](https://github.com/jwadow)
 
 *Use Claude models from Kiro with Claude Code, OpenCode, OpenClaw, Claw Code, Codex app, Cursor, Cline, Roo Code, Kilo Code, Obsidian, OpenAI SDK, LangChain, Continue and other OpenAI or Anthropic compatible tools*
 
-[Models](#-supported-models) • [Features](#-features) • [Quick Start](#-quick-start) • [Configuration](#%EF%B8%8F-configuration) • [💖 Sponsor](#-support-the-project)
+[Models](#-available-models) • [Features](#-features) • [Quick Start](#-quick-start) • [Configuration](#%EF%B8%8F-configuration) • [💖 Sponsor](#-support-the-project)
 
 </div>
 
 ---
 
-## 🤖 Available Models (Free List)
+## 🤖 Available Models
 
-> ⚠️ **Important:** Model availability depends on your Kiro tier (free/paid). The gateway provides access to whatever models are available in your IDE or CLI based on your subscription. The list below shows models commonly available on the **free tier**.
+> ⚠ **Important:** Model availability depends on your Kiro plan and region. The gateway serves whatever models your account has: it fetches the live list from Kiro at startup. Run `kiro-cli chat --list-models` or call `GET /v1/models` to see yours. Models marked ✅ below were tested through this gateway in November 2026. Source: [Kiro models docs](https://kiro.dev/docs/models/).
 
-> 🔒 **Claude Opus 4.5** was removed from the free tier on January 17, 2026. It may be available on paid tiers — check your IDE/CLI model list.
+| Model ID | Family | Context | Credits | Free tier | Notes |
+|----------|--------|---------|---------|-----------|-------|
+| `auto` / `auto-kiro` | Kiro router | — | 1.0x | ✓ | ✅ Kiro picks the model per task |
+| `claude-opus-5.5` | Anthropic | 1M | 2.0x | | ✅ Latest Opus |
+| `claude-sonnet-5.5` | Anthropic | 1M | 1.3x | | ✅ Latest Sonnet |
+| `claude-haiku-5.5` | Anthropic | 1M | 0.06x* | | ✅ Latest Haiku |
+| `claude-opus-5` | Anthropic | 1M | 2.2x | | ✅ |
+| `claude-sonnet-5` | Anthropic | 1M | 1.3x | | ✅ |
+| `claude-opus-4.8` | Anthropic | 1M | 2.2x | | ✅ |
+| `claude-opus-4.7` | Anthropic | 1M | 2.2x | | ✅ |
+| `claude-opus-4.6` | Anthropic | 1M | 2.2x | | ✅ |
+| `claude-opus-4.5` | Anthropic | 200K | 2.2x | | ✅ |
+| `claude-sonnet-4.6` | Anthropic | 1M | 1.3x | | ✅ |
+| `claude-sonnet-4.5` | Anthropic | 200K | 1.3x | ✓ | ✅ |
+| `claude-haiku-4.5` | Anthropic | 200K | 0.4x | | ✅ |
+| `gpt-5.6-sol` | OpenAI | 1M | 4.4x* | | ✅ Hardest multi-step work |
+| `gpt-5.6-terra` | OpenAI | 1M | 2.2x* | | ✅ Balanced |
+| `gpt-5.6-luna` | OpenAI | 1M | 0.6x* | | ✅ Fast, cheap |
+| `grok-4.7` | xAI | 500K | 2.7x* | | ✅ Experimental |
+| `deepseek-3.2` | Open weight | 128K | 0.25x | ✓ | ✅ Experimental |
+| `minimax-m2.5` | Open weight | 200K | 0.25x | ✓ | ✅ |
+| `minimax-m2.1` | Open weight | 200K | 0.15x | ✓ | ✅ Experimental |
+| `glm-5` | Open weight | 200K | 0.5x | ✓ | ✅ |
+| `qwen3-coder-next` | Open weight | 256K | 0.05x | ✓ | ✅ Experimental |
+| `kimi-k3` | Open weight | 1M | 2.4x | | Not tested. US geography, paid plans only |
+| `claude-fable-5.1` | Anthropic | 1M | 6x | | Not tested. Enterprise only, admin must enable |
 
-🚀 **Claude Sonnet 4.5** — Balanced performance. Great for coding, writing, and general-purpose tasks.
+\* Higher rate for long requests: GPT-5.6 above 272K tokens (2x), Haiku 5.5 above 100K (0.3x), Grok 4.7 above 200K (5.4x).
 
-⚡ **Claude Haiku 4.5** — Lightning fast. Perfect for quick responses, simple tasks, and chat.
+> 🗓 **Removed:** `claude-sonnet-4` reached end of life on October 14, 2026, and is no longer served by Kiro.
 
-📦 **Claude Sonnet 4** — Previous generation. Still powerful and reliable for most use cases.
+> 🔁 **Unlisted models:** Any model name not in the list is still sent to Kiro unchanged. If your account has access, it works.
 
-💤 **GLM-5** — Open MoE model (744B params, 40B active). Advanced model for complex systems engineering and long-horizon agentic tasks.
-
-🐋 **DeepSeek-V3.2** — Open MoE model (685B params, 37B active). Balanced performance for coding, reasoning, and general tasks.
-
-🧩 **MiniMax M2.5** — Open MoE model (230B params, 10B active). Enhanced version with improved reasoning and task handling.
-
-🧩 **MiniMax M2.1** — Open MoE model (230B params, 10B active). Great for complex tasks, planning, and multi-step workflows.
-
-🤖 **Qwen3-Coder-Next** — Open MoE model (80B params, 3B active). Coding-focused. Excellent for development and large projects.
-
-> 💡 **Smart Model Resolution:** Use any model name format — `claude-sonnet-4-5`, `claude-sonnet-4.5`, or even versioned names like `claude-sonnet-4-5-20250929`. The gateway normalizes them automatically.
+> 💡 **Smart Model Resolution:** Use any model name format: `claude-opus-5-5`, `claude-opus-5.5`, versioned names like `claude-sonnet-4-5-20250929`, or `claude-opus-5.5[1m]`. The gateway normalizes them automatically.
 
 ---
 
@@ -522,6 +537,46 @@ Leave `VPN_PROXY_URL` empty (default) if you don't need proxy support.
 
 ## 💡 Usage Examples
 
+### Check Your Models
+
+<details>
+<summary>📋 List available models</summary>
+
+```bash
+curl http://localhost:8000/v1/models \
+  -H "Authorization: Bearer my-super-secret-password-123"
+```
+
+Print only the IDs:
+
+```bash
+curl -s http://localhost:8000/v1/models \
+  -H "Authorization: Bearer my-super-secret-password-123" \
+  | python3 -c "import json,sys; [print(m['id']) for m in json.load(sys.stdin)['data']]"
+```
+
+</details>
+
+<details>
+<summary>✅ Test every model</summary>
+
+Sends one short prompt to each model your account lists and prints PASS or FAIL. Each request uses a small amount of Kiro credits.
+
+```bash
+KEY="my-super-secret-password-123"
+for m in $(curl -s http://localhost:8000/v1/models -H "Authorization: Bearer $KEY" \
+    | python3 -c "import json,sys; [print(m['id']) for m in json.load(sys.stdin)['data']]"); do
+  curl -s -m 120 -o /tmp/kiro-test.json http://localhost:8000/v1/chat/completions \
+    -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+    -d "{\"model\":\"$m\",\"messages\":[{\"role\":\"user\",\"content\":\"Reply with just: OK\"}]}"
+  python3 -c "import json; d=json.load(open('/tmp/kiro-test.json')); print('$m', 'PASS' if 'choices' in d else 'FAIL ' + d.get('error', {}).get('message', ''))"
+done
+```
+
+> **Note:** Some models return their reasoning in `reasoning_content` alongside `content`. A `FAIL` with "Invalid model ID or insufficient subscription level" means your plan or region does not include that model.
+
+</details>
+
 ### OpenAI API
 
 <details>
@@ -533,12 +588,11 @@ curl http://localhost:8000/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "claude-sonnet-4-5",
-    "messages": [{"role": "user", "content": "Hello!"}],
-    "stream": true
+    "messages": [{"role": "user", "content": "Hello!"}]
   }'
 ```
 
-> **Note:** Replace `my-super-secret-password-123` with the `PROXY_API_KEY` you set in your `.env` file.
+> **Note:** Replace `my-super-secret-password-123` with the `PROXY_API_KEY` you set in your `.env` file. Swap `model` for any ID from [Available Models](#-available-models), for example `claude-opus-5.5` or `gpt-5.6-sol`.
 
 </details>
 
@@ -546,7 +600,7 @@ curl http://localhost:8000/v1/chat/completions \
 <summary>🔹 Streaming Request</summary>
 
 ```bash
-curl http://localhost:8000/v1/chat/completions \
+curl -N http://localhost:8000/v1/chat/completions \
   -H "Authorization: Bearer my-super-secret-password-123" \
   -H "Content-Type: application/json" \
   -d '{
@@ -680,7 +734,7 @@ curl http://localhost:8000/v1/messages \
 <summary>📡 Streaming</summary>
 
 ```bash
-curl http://localhost:8000/v1/messages \
+curl -N http://localhost:8000/v1/messages \
   -H "x-api-key: my-super-secret-password-123" \
   -H "anthropic-version: 2023-06-01" \
   -H "Content-Type: application/json" \
